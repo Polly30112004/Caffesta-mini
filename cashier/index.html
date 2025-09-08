@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Касса - Вилки&Ложки</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <h1>Вилки & Ложки</h1>
+            <nav class="main-nav">
+                <button class="nav-btn active" data-page="home">Столы</button>
+                <button class="nav-btn" data-page="orders">Заказы</button>
+                 <button class="nav-btn" data-page="customers">Покупатели</button> 
+            </nav>
+            <div class="user-info">
+                <span class="username">Кассир: <span id="current-user"></span></span>
+                <button id="logout-btn" class="logout-btn">Выйти</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="content-area"></div>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

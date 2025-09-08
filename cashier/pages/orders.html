@@ -1,0 +1,44 @@
+<div class="orders-page">
+    <div class="orders-header">
+        <h2 id="orders-title">Новый заказ</h2>
+        <button class="back-btn" onclick="goBack()">← Назад</button>
+    </div>
+
+    <div class="order-system">
+        <div class="order-panel">
+            <div class="customer-section">
+                <h3>Клиент</h3>
+                <input type="text" id="customer-search" placeholder="Поиск клиента...">
+                <div id="customer-results" class="customer-results hidden"></div>
+                <button id="new-customer-btn">+ Новый клиент</button>
+                <div id="customer-info" class="hidden">
+                    <p>Телефон: <span id="customer-phone"></span></p>
+                    <p>Адрес: <span id="customer-address"></span></p>
+                    <p>Заказов: <span id="customer-order-count">0</span></p>
+                </div>
+            </div>
+
+            <div class="order-items">
+                <h3>Заказ</h3>
+                <div id="order-items-list"></div>
+            </div>
+
+            <div class="order-summary">
+                <h3>Итого: <span id="total-amount">0</span> руб.</h3>
+                <button id="print-btn" disabled>Печать чека</button>
+            </div>
+        </div>
+
+        <div class="products-panel">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Поиск блюд...">
+                <select id="category-filter">
+                    <option value="">Все категории</option>
+                </select>
+            </div>
+
+            <div class="products-grid" id="products-grid"></div>
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,55 @@
+<div class="customers-page">
+    <div class="customers-header">
+        <h2 id="customers-title">Список покупателей</h2>
+        <button class="back-btn" onclick="goBack()">← Назад</button>
+    </div>
+
+    <div class="customers-system">
+        <div class="customers-panel">
+            <div class="search-section">
+                <input type="text" id="search-input" placeholder="Поиск по имени или телефону...">
+            </div>
+            <button id="add-customer-btn">Добавить покупателя</button>
+
+            <div id="customer-form-container" class="form-container hidden">
+                <h3 id="form-title">Добавить нового покупателя</h3>
+                <div class="form-group">
+                    <label for="customer-name">Имя:</label>
+                    <input type="text" id="customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="customer-phone">Телефон:</label>
+                    <input type="text" id="customer-phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="customer-address">Адрес:</label>
+                    <input type="text" id="customer-address">
+                </div>
+                <div class="form-group">
+                    <label for="customer-count">Количество заказов:</label>
+                    <input type="number" id="customer-count" min="0" value="0" required>
+                </div>
+                <div class="modal-buttons">
+                    <button id="save-customer-btn" class="btn">Сохранить</button>
+                    <button id="cancel-customer-btn" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+
+            <div class="customers-list">
+                <table id="customers-table">
+                    <thead>
+                        <tr>
+                            <th>Имя</th>
+                            <th>Телефон</th>
+                            <th>Адрес</th>
+                            <th>Количество заказов</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-table-body"></tbody>
+                </table>
+                <div id="pagination" class="pagination"></div> 
+            </div>
+        </div>
+    </div>
+</div>
