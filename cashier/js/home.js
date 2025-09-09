@@ -1,7 +1,13 @@
 // cashier/js/home.js
+
+let allDishes = [];
+let allCustomers = [];
+
 async function initHome() {
     console.log('Home page initialized');
     await loadTables();
+    await loadDishes();
+    await loadCustomers();
 }
 
 async function loadTables() {
@@ -20,6 +26,29 @@ async function loadTables() {
     }
 }
 
+async function loadDishes() {
+    try {
+        const data = await SupabaseClient.getDishes();
+        allDishes = data || [];
+        console.log('Dishes loaded:', allDishes);
+    } catch (error) {
+        console.error('Ошибка загрузки блюд:', error);
+        allDishes = [];
+    }
+}
+
+async function loadCustomers() {
+    try {
+        const { data, error } = await SupabaseClient.getCustomers();
+        if (error) throw error;
+        allCustomers = data || [];
+        console.log('Customers loaded:', allCustomers);
+    } catch (error) {
+        console.error('Ошибка загрузки клиентов:', error);
+        allCustomers = [];
+    }
+}
+
 function renderTables(count, activeOrders) {
     const grid = document.getElementById('tables-grid');
     if (!grid) {
@@ -28,8 +57,8 @@ function renderTables(count, activeOrders) {
     }
     
     grid.innerHTML = '';
-    grid.style.display = 'grid'; // Восстанавливаем сетку
-    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(150px, 1fr))'; // Восстанавливаем колонки
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(150px, 1fr))';
     
     for (let i = 1; i <= count; i++) {
         const tableOrder = activeOrders.find(order => order.table_number === i);
@@ -50,7 +79,7 @@ function renderTables(count, activeOrders) {
         `;
         
         tableCard.addEventListener('click', (e) => {
-            if (e.target.classList.contains('complete-btn') || e.target.classList.contains('cancel-btn')) return; // Игнорируем клик на кнопках
+            if (e.target.classList.contains('complete-btn') || e.target.classList.contains('cancel-btn')) return;
             handleTableClick(i, status, tableOrder);
         });
         grid.appendChild(tableCard);
@@ -67,82 +96,73 @@ function handleTableClick(tableNumber, status, tableOrder) {
     }
 }
 
-async function completeOrder(orderId, tableNumber) {
-    console.log('Attempting to complete order:', orderId, tableNumber);
-    try {
-        const response = await SupabaseClient.updateOrderStatus(orderId, 'completed');
-        console.log('Response from updateOrderStatus:', response); // Детальная отладка
-        if (!response || (response.error && response.error.message)) {
-            console.error('Ошибка обновления статуса заказа:', response?.error?.message || 'Неизвестная ошибка');
-            throw new Error(response?.error?.message || 'Неизвестная ошибка');
+async function findDishById(dishId) {
+    // Сначала проверяем локальный кэш
+    if (allDishes.length) {
+        const dish = allDishes.find(d => d.id === dishId);
+        if (dish) {
+            console.log(`Dish found in cache: ${dish.name} (ID: ${dishId})`);
+            return dish;
         }
-        console.log(`Order ${orderId} completed for table ${tableNumber}`);
-        await loadTables();
-    } catch (error) {
-        console.error('Ошибка завершения заказа:', error);
-        alert('Ошибка завершения заказа: ' + error.message);
     }
-}
 
-async function cancelOrder(orderId, tableNumber, customerId) {
-    console.log('Attempting to cancel order:', orderId, tableNumber, 'for customer:', customerId);
+    // Если блюдо не найдено в кэше, делаем запрос к Supabase
     try {
-        // Проверяем, является ли клиент гостем
-        if (!customerId) {
-            console.log('Canceling order for guest, promo will not be updated');
-            await SupabaseClient.deleteOrder(orderId);
-            await loadTables();
-            return;
+        console.log(`Fetching dish with ID: ${dishId}`);
+        const { data, error } = await SupabaseClient.getDishes().eq('id', dishId).single();
+        if (error || !data) {
+            console.warn(`Dish not found or error: ${error?.message || 'No data'}`);
+            return { name: `Неизвестное блюдо (ID: ${dishId})`, price: 0 };
         }
-
-        // Получаем текущего клиента
-        const { data: customers, error: fetchError } = await SupabaseClient.getCustomers();
-        if (fetchError) throw fetchError;
-
-        const customer = customers.find(c => c.id === customerId);
-        if (!customer) throw new Error('Клиент не найден');
-
-        let newPromo = (customer.promo || 0) - 1;
-        if (newPromo < 0) newPromo = 0;
-        if (newPromo > 10) newPromo = 0; 
-
-        // Обновляем promo клиента
-        await SupabaseClient.updateCustomer({ id: customerId, promo: newPromo });
-
-        // Удаляем заказ
-        await SupabaseClient.deleteOrder(orderId);
-
-        console.log(`Order ${orderId} canceled for table ${tableNumber}, customer promo updated to ${newPromo}`);
-        await loadTables(); 
+        console.log(`Dish fetched from Supabase: ${data.name} (ID: ${dishId})`);
+        return data;
     } catch (error) {
-        console.error('Ошибка отмены заказа:', error);
-        alert('Ошибка отмены заказа: ' + error.message);
+        console.error('Error fetching dish:', error);
+        return { name: `Неизвестное блюдо (ID: ${dishId})`, price: 0 };
     }
 }
 
 async function showOrderReceipt(order) {
     try {
-        const allDishes = await SupabaseClient.getDishes();
-        const allCustomers = await SupabaseClient.getCustomers();
+        console.log('Showing receipt for order:', order);
         
+        // Если блюда не загружены, пытаемся загрузить их
+        if (!allDishes.length) {
+            console.warn('No dishes loaded, attempting to reload');
+            await loadDishes();
+        }
+        
+        // Если клиенты не загружены, пытаемся загрузить их
+        if (!allCustomers.length) {
+            console.warn('No customers loaded, attempting to reload');
+            await loadCustomers();
+        }
+
+        // Парсим id_dishes из заказа
+        const dishIds = (order.id_dishes || '').split(',').filter(id => id.trim() !== '').map(id => parseInt(id));
+        if (!dishIds.length) {
+            console.warn('No valid dish IDs found in order:', order.id_dishes);
+        }
+
+        // Подсчитываем количество каждого блюда
         const dishCounts = {};
-        order.id_dishes.split(',').forEach(id => {
-            dishCounts[id] = (dishCounts[id] || 0) + 1;
+        dishIds.forEach(id => {
+            if (!isNaN(id)) {
+                dishCounts[id] = (dishCounts[id] || 0) + 1;
+            } else {
+                console.warn('Invalid dish ID:', id);
+            }
         });
-        
-        const orderItems = Object.entries(dishCounts).map(([dishIdStr, quantity]) => {
-            const dishId = parseInt(dishIdStr);
-            const dish = allDishes.find(d => d.id === dishId);
-            const customer = allCustomers.find(c => c.id === order.id_customer);
-            return {
-                dish: dish || { name: 'Неизвестное блюдо', price: 0 },
-                quantity,
-                customer
-            };
-        });
-        
+
+        // Получаем данные о блюдах
+        const orderItems = await Promise.all(Object.entries(dishCounts).map(async ([dishId, quantity]) => {
+            const dish = await findDishById(parseInt(dishId));
+            const customer = allCustomers.find(c => c.id === order.id_customer) || null;
+            return { dish, quantity, customer };
+        }));
+
+        // Генерируем HTML для чека
         const receiptContent = generateReceiptContentForOrder(orderItems, order);
-        
         document.getElementById('content-area').innerHTML = receiptContent;
     } catch (error) {
         console.error('Ошибка показа чека:', error);
@@ -155,7 +175,7 @@ function generateReceiptContentForOrder(orderItems, order) {
     const today = new Date(order.created_at).toLocaleString('ru-RU');
     
     return `
-        <div class="receipt-content receipt-content-home"> <!-- Специфический класс для вкладки "Столы" -->
+        <div class="receipt-content receipt-content-home">
             <div class="orders-header">
                 <h2>Чек для стола ${order.table_number}</h2>
                 <button class="back-btn" onclick="closeReceipt()">← Назад</button>
@@ -201,5 +221,4 @@ window.closeReceipt = function() {
 
 window.completeOrder = completeOrder;
 window.cancelOrder = cancelOrder; 
-
 window.initHome = initHome;
