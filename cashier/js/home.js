@@ -209,6 +209,31 @@ function generateReceiptContentForOrder(orderItems, order) {
     `;
 }
 
+async function completeOrder(orderId, tableNumber) {
+    try {
+        console.log(`Completing order ${orderId} for table ${tableNumber}`);
+        const { data, error } = await SupabaseClient.updateOrderStatus(orderId, 'completed');
+        if (error) throw error;
+        console.log(`Order ${orderId} completed successfully`);
+        await loadTables(); // Перерисовываем столы
+    } catch (error) {
+        console.error('Ошибка завершения заказа:', error);
+        alert('Ошибка при завершении заказа');
+    }
+}
+
+async function cancelOrder(orderId, tableNumber, customerId) {
+    try {
+        console.log(`Canceling order ${orderId} for table ${tableNumber}`);
+        await SupabaseClient.deleteOrder(orderId);
+        console.log(`Order ${orderId} canceled successfully`);
+        await loadTables(); // Перерисовываем столы
+    } catch (error) {
+        console.error('Ошибка отмены заказа:', error);
+        alert('Ошибка при отмене заказа');
+    }
+}
+
 window.closeReceipt = function() {
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
